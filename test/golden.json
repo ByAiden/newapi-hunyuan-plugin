@@ -1,0 +1,1253 @@
+{
+  "cases": [
+    {
+      "name": "text to video goes to the Hunyuan video endpoint with 5s 720p",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "prompt": "A puppy runs on grass",
+            "seed": 7,
+            "duration": 5,
+            "aspect_ratio": "9:16",
+            "model": "hy-video-v1.5"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "url": "https://tokenhub.tencentmaas.com/v1/wand/hunyuan-video/generation",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer test-key"
+        },
+        "body": {
+          "model": "hy-video-v1.5",
+          "prompt": "A puppy runs on grass",
+          "aspect_ratio": "9:16",
+          "seed": 7,
+          "duration": 5,
+          "resolution": "720p"
+        },
+        "action": "text_to_video"
+      }
+    },
+    {
+      "name": "a mapped model name sends the upstream model",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-video-v1.5",
+            "prompt": "Turn the head",
+            "image_url": "https://example.com/a.jpg"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_video",
+          "model": "hunyuan-video",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "url": "https://tokenhub.tencentmaas.com/v1/wand/hunyuan-video/generation",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer test-key"
+        },
+        "body": {
+          "model": "hy-video-v1.5",
+          "prompt": "Turn the head",
+          "image_url": "https://example.com/a.jpg",
+          "duration": 5,
+          "resolution": "720p"
+        },
+        "action": "image_to_video"
+      }
+    },
+    {
+      "name": "video reserves 150000 tokens",
+      "hook": "extractUsage",
+      "args": [
+        {
+          "requestBody": {
+            "prompt": "A puppy runs on grass",
+            "seed": 7,
+            "duration": 5,
+            "aspect_ratio": "9:16",
+            "model": "hy-video-v1.5"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "video_tokens": 150000
+      }
+    },
+    {
+      "name": "video rejects a duration other than 5",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-video-v1.5",
+            "prompt": "x",
+            "duration": 10
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expectedError": "duration must be 5"
+    },
+    {
+      "name": "video rejects aspect_ratio with an image",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-video-v1.5",
+            "image_url": "https://example.com/a.jpg",
+            "aspect_ratio": "16:9"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expectedError": "aspect_ratio applies to text to video only"
+    },
+    {
+      "name": "video rejects unknown fields",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-video-v1.5",
+            "prompt": "x",
+            "callback_url": "https://example.com"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expectedError": "callback_url is not supported"
+    },
+    {
+      "name": "video keeps the task id",
+      "hook": "parseSubmitResponse",
+      "args": [
+        {
+          "requestBody": {
+            "prompt": "A puppy runs on grass",
+            "seed": 7,
+            "duration": 5,
+            "aspect_ratio": "9:16",
+            "model": "hy-video-v1.5"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        },
+        {
+          "statusCode": 200,
+          "headers": {},
+          "body": {
+            "task_id": "251435731-WandVideo-05c42d57",
+            "created": 1787108411,
+            "request_id": "r-1"
+          }
+        }
+      ],
+      "expected": {
+        "taskId": "251435731-WandVideo-05c42d57",
+        "taskData": {
+          "task_id": "251435731-WandVideo-05c42d57",
+          "created": 1787108411,
+          "request_id": "r-1"
+        }
+      }
+    },
+    {
+      "name": "a failed envelope fails the video submission",
+      "hook": "parseSubmitResponse",
+      "args": [
+        {
+          "requestBody": {
+            "prompt": "A puppy runs on grass",
+            "seed": 7,
+            "duration": 5,
+            "aspect_ratio": "9:16",
+            "model": "hy-video-v1.5"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        },
+        {
+          "statusCode": 200,
+          "headers": {},
+          "body": {
+            "task_id": "",
+            "status": "failed",
+            "error": {
+              "code": "1300",
+              "message": "Trigger the platform strategy"
+            }
+          }
+        }
+      ],
+      "expectedError": "Trigger the platform strategy"
+    },
+    {
+      "name": "video polls the task endpoint",
+      "hook": "buildQueryRequest",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        }
+      ],
+      "expected": {
+        "url": "https://tokenhub.tencentmaas.com/v1/wand/hunyuan-video/tasks/251435731-WandVideo-05c42d57",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer test-key"
+        }
+      }
+    },
+    {
+      "name": "running video is in progress",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "task_id": "251435731-WandVideo-05c42d57",
+          "status": "running",
+          "error": null
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "IN_PROGRESS",
+        "progress": "50%"
+      }
+    },
+    {
+      "name": "succeeded video is a success",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "created": 1787108411,
+          "error": null,
+          "task_id": "251435731-WandVideo-05c42d57",
+          "status": "succeeded",
+          "videos": [
+            {
+              "audio_url": "",
+              "generate_info": "",
+              "url": "https://aigc-output-video.cos.ap-guangzhou.myqcloud.com/v_0.mp4?q-sign-algorithm=sha1"
+            }
+          ],
+          "tokenhub_usage": {
+            "total_tokens": 150000
+          },
+          "request_id": "r-2"
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "SUCCESS",
+        "progress": "100%"
+      }
+    },
+    {
+      "name": "failed video carries the vendor reason",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "task_id": "251435731-WandVideo-05c42d57",
+          "status": "failed",
+          "error": {
+            "code": "InternalServiceError",
+            "message": "generate video failed"
+          }
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "FAILURE",
+        "progress": "100%",
+        "reason": "generate video failed (InternalServiceError)"
+      }
+    },
+    {
+      "name": "unrecognized video status is UNKNOWN",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "task_id": "251435731-WandVideo-05c42d57",
+          "status": "paused"
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "UNKNOWN",
+        "reason": "unrecognized status: paused"
+      }
+    },
+    {
+      "name": "video settles on the reported tokens",
+      "hook": "extractUsageOnComplete",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "status": "SUCCESS"
+        },
+        {
+          "created": 1787108411,
+          "error": null,
+          "task_id": "251435731-WandVideo-05c42d57",
+          "status": "succeeded",
+          "videos": [
+            {
+              "audio_url": "",
+              "generate_info": "",
+              "url": "https://aigc-output-video.cos.ap-guangzhou.myqcloud.com/v_0.mp4?q-sign-algorithm=sha1"
+            }
+          ],
+          "tokenhub_usage": {
+            "total_tokens": 120000
+          },
+          "request_id": "r-2"
+        }
+      ],
+      "expected": {
+        "video_tokens": 120000
+      }
+    },
+    {
+      "name": "video lists one mp4",
+      "hook": "listArtifacts",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "status": "SUCCESS",
+          "action": "text_to_video",
+          "data": {
+            "created": 1787108411,
+            "error": null,
+            "task_id": "251435731-WandVideo-05c42d57",
+            "status": "succeeded",
+            "videos": [
+              {
+                "audio_url": "",
+                "generate_info": "",
+                "url": "https://aigc-output-video.cos.ap-guangzhou.myqcloud.com/v_0.mp4?q-sign-algorithm=sha1"
+              }
+            ],
+            "tokenhub_usage": {
+              "total_tokens": 150000
+            },
+            "request_id": "r-2"
+          },
+          "producerVersion": "1.0.0"
+        }
+      ],
+      "expected": [
+        {
+          "key": "video",
+          "type": "video",
+          "mimeType": "video/mp4"
+        }
+      ]
+    },
+    {
+      "name": "video download falls back to the polled URL",
+      "hook": "buildContentRequest",
+      "args": [
+        {
+          "requestBody": {
+            "prompt": "A puppy runs on grass",
+            "seed": 7,
+            "duration": 5,
+            "aspect_ratio": "9:16",
+            "model": "hy-video-v1.5"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public",
+          "artifactKey": "video",
+          "data": {
+            "created": 1787108411,
+            "error": null,
+            "task_id": "251435731-WandVideo-05c42d57",
+            "status": "succeeded",
+            "videos": [
+              {
+                "audio_url": "",
+                "generate_info": "",
+                "url": "https://aigc-output-video.cos.ap-guangzhou.myqcloud.com/v_0.mp4?q-sign-algorithm=sha1"
+              }
+            ],
+            "tokenhub_usage": {
+              "total_tokens": 150000
+            },
+            "request_id": "r-2"
+          },
+          "upstreamTaskId": "",
+          "clientRequest": {
+            "method": "GET",
+            "headers": {}
+          }
+        }
+      ],
+      "expected": {
+        "url": "https://aigc-output-video.cos.ap-guangzhou.myqcloud.com/v_0.mp4?q-sign-algorithm=sha1",
+        "method": "GET",
+        "credentialless": true
+      }
+    },
+    {
+      "name": "3D LowPoly with PBR goes to the 3D submit endpoint",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.0",
+            "image_url": "https://example.com/cat.png",
+            "generate_type": "LowPoly",
+            "polygon_type": "quadrilateral",
+            "enable_pbr": true
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_3d",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "url": "https://tokenhub.tencentmaas.com/v1/api/3d/submit",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer test-key"
+        },
+        "body": {
+          "model": "hy-3d-3.0",
+          "image_url": "https://example.com/cat.png",
+          "enable_pbr": true,
+          "generate_type": "LowPoly",
+          "polygon_type": "quadrilateral"
+        },
+        "action": "image_to_3d"
+      }
+    },
+    {
+      "name": "3D LowPoly with PBR reserves 35 credits",
+      "hook": "extractUsage",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.0",
+            "image_url": "https://example.com/cat.png",
+            "generate_type": "LowPoly",
+            "polygon_type": "quadrilateral",
+            "enable_pbr": true
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_3d",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "credits": 35
+      }
+    },
+    {
+      "name": "3D Express with PBR reserves 25 credits",
+      "hook": "extractUsage",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-express",
+            "prompt": "一只小猫",
+            "enable_pbr": true
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_3d",
+          "model": "hy-3d-express",
+          "upstreamModel": "hy-3d-express",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "credits": 25
+      }
+    },
+    {
+      "name": "3D Normal with every option reserves 55 credits",
+      "hook": "extractUsage",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.1",
+            "image_url": "https://example.com/front.png",
+            "multi_view_images": [
+              {
+                "view_type": "back",
+                "view_image_url": "https://example.com/back.png"
+              }
+            ],
+            "enable_pbr": true,
+            "face_count": 100000,
+            "result_format": "fbx"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "multi_view_to_3d",
+          "model": "hy-3d-3.1",
+          "upstreamModel": "hy-3d-3.1",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "credits": 55
+      }
+    },
+    {
+      "name": "3D rejects LowPoly on hy-3d-3.1",
+      "hook": "extractUsage",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.1",
+            "image_url": "https://example.com/a.png",
+            "generate_type": "LowPoly"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_3d",
+          "model": "hy-3d-3.1",
+          "upstreamModel": "hy-3d-3.1",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expectedError": "not available on hy-3d-3.1"
+    },
+    {
+      "name": "3D rejects a prompt with an image",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.0",
+            "prompt": "x",
+            "image_url": "https://example.com/a.png"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_3d",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expectedError": "prompt cannot be combined with an image"
+    },
+    {
+      "name": "3D keeps the job id",
+      "hook": "parseSubmitResponse",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.0",
+            "image_url": "https://example.com/cat.png",
+            "generate_type": "LowPoly",
+            "polygon_type": "quadrilateral",
+            "enable_pbr": true
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_3d",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        },
+        {
+          "statusCode": 200,
+          "headers": {},
+          "body": {
+            "id": "1472100320",
+            "request_id": "r-1",
+            "object": "3d_job",
+            "created_at": 1784885898,
+            "status": "queued"
+          }
+        }
+      ],
+      "expected": {
+        "taskId": "1472100320",
+        "taskData": {
+          "id": "1472100320",
+          "request_id": "r-1",
+          "object": "3d_job",
+          "created_at": 1784885898,
+          "status": "queued"
+        }
+      }
+    },
+    {
+      "name": "3D polls the query endpoint with the model",
+      "hook": "buildQueryRequest",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        }
+      ],
+      "expected": {
+        "url": "https://tokenhub.tencentmaas.com/v1/api/3d/query",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer test-key"
+        },
+        "body": {
+          "model": "hy-3d-3.0",
+          "id": "1472100320"
+        }
+      }
+    },
+    {
+      "name": "queued 3D job is queued",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "object": "3d_job",
+          "status": "queued"
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "QUEUED",
+        "progress": "10%"
+      }
+    },
+    {
+      "name": "completed 3D job is a success",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "request_id": "r-3",
+          "object": "3d_job",
+          "created_at": 1784884760,
+          "completed_at": 1784884860,
+          "status": "completed",
+          "data": [
+            {
+              "type": "obj",
+              "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.zip",
+              "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+            },
+            {
+              "type": "glb",
+              "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.glb",
+              "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+            }
+          ]
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "SUCCESS",
+        "progress": "100%"
+      }
+    },
+    {
+      "name": "failed 3D job is a failure",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "object": "3d_job",
+          "status": "failed"
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "FAILURE",
+        "progress": "100%",
+        "reason": "3D generation failed"
+      }
+    },
+    {
+      "name": "unrecognized 3D status is UNKNOWN",
+      "hook": "parseTaskResult",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "object": "3d_job",
+          "status": "cancelled"
+        },
+        {
+          "status": 200,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "UNKNOWN",
+        "reason": "unrecognized status: cancelled"
+      }
+    },
+    {
+      "name": "3D keeps the reserved credits",
+      "hook": "extractUsageOnComplete",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        },
+        {
+          "status": "SUCCESS"
+        },
+        {
+          "request_id": "r-3",
+          "object": "3d_job",
+          "created_at": 1784884760,
+          "completed_at": 1784884860,
+          "status": "completed",
+          "data": [
+            {
+              "type": "obj",
+              "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.zip",
+              "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+            },
+            {
+              "type": "glb",
+              "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.glb",
+              "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+            }
+          ]
+        }
+      ],
+      "expected": null
+    },
+    {
+      "name": "3D lists model files and previews",
+      "hook": "listArtifacts",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "status": "SUCCESS",
+          "action": "image_to_3d",
+          "data": {
+            "request_id": "r-3",
+            "object": "3d_job",
+            "created_at": 1784884760,
+            "completed_at": 1784884860,
+            "status": "completed",
+            "data": [
+              {
+                "type": "obj",
+                "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.zip",
+                "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+              },
+              {
+                "type": "glb",
+                "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.glb",
+                "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+              }
+            ]
+          },
+          "producerVersion": "1.0.0"
+        }
+      ],
+      "expected": [
+        {
+          "key": "obj",
+          "type": "file",
+          "mimeType": "application/zip"
+        },
+        {
+          "key": "preview_obj",
+          "type": "image",
+          "mimeType": "image/png"
+        },
+        {
+          "key": "glb",
+          "type": "file",
+          "mimeType": "model/gltf-binary"
+        },
+        {
+          "key": "preview_glb",
+          "type": "image",
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "3D download uses the polled file URL",
+      "hook": "buildContentRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.0",
+            "image_url": "https://example.com/cat.png",
+            "generate_type": "LowPoly",
+            "polygon_type": "quadrilateral",
+            "enable_pbr": true
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_3d",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://tokenhub.tencentmaas.com",
+          "apiKey": "test-key",
+          "authHeader": "Bearer test-key",
+          "upstream": {
+            "kind": "vendor"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public",
+          "artifactKey": "glb",
+          "data": {
+            "request_id": "r-3",
+            "object": "3d_job",
+            "created_at": 1784884760,
+            "completed_at": 1784884860,
+            "status": "completed",
+            "data": [
+              {
+                "type": "obj",
+                "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.zip",
+                "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+              },
+              {
+                "type": "glb",
+                "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.glb",
+                "preview_image_url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.png"
+              }
+            ]
+          },
+          "upstreamTaskId": "1472100320",
+          "clientRequest": {
+            "method": "GET",
+            "headers": {}
+          }
+        }
+      ],
+      "expected": {
+        "url": "https://hunyuan-prod.cos.ap-guangzhou.tencentcos.cn/3d/output/a_0.glb",
+        "method": "GET",
+        "credentialless": true
+      }
+    }
+  ]
+}
