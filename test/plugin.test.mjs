@@ -23,7 +23,7 @@ test('manifest is a plain JSON literal and community release',()=>{
   const src=readFileSync(new URL('../plugin.js',import.meta.url),'utf8');
   const match=src.match(/export const meta = (\{[\s\S]*?\n\});/);
   assert.deepEqual(JSON.parse(match[1]),p.meta);
-  assert.equal(p.meta.version,'1.0.0');
+  assert.equal(p.meta.version,'1.0.1');
   assert.match(p.meta.key,/^[a-z0-9_]{1,30}$/);
   assert.ok(p.meta.key.endsWith('_hunyuan'));
   assert.equal(p.meta.channelTypes,undefined);
@@ -126,4 +126,12 @@ test('native presenters return gateway ids and artifact URLs only',()=>{
 test('hooks do not mutate request or task input',()=>{
   const c=freeze(ctx(G,{prompt:'猫',enable_pbr:true}));p.buildSubmitRequest(c);p.extractUsage(c);
   const d=freeze(structuredClone(done3D));p.parseTaskResult(c,d);p.listArtifacts(freeze({status:'SUCCESS',data:d}));
+});
+
+test("code never references meta, so the gateway can read it statically", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("../plugin.js", import.meta.url), "utf8");
+  const rest = src.slice(src.indexOf("\n};\n", src.indexOf("export const meta = {")));
+  assert.doesNotMatch(rest, /(^|[^A-Za-z0-9_$.])meta([^A-Za-z0-9_$]|$)/m);
+  assert.ok(rest.includes(JSON.stringify(p.meta.models)));
 });

@@ -1,17 +1,16 @@
 ---
 changelogVersion: 1
 plugin: "byaiden_hunyuan"
-version: "1.0.0"
+version: "1.0.1"
 locale: "en"
 translations:
   zh-CN: CHANGELOG.zh-CN.md
 ---
+
 # Changelog
 
-## [1.0.0]
+## [1.0.1]
 
-### Added
+### Fixed
 
-- Tencent Cloud TokenHub Hunyuan video generation with HY-Video 1.5, OpenAI video protocol and native video routes.
-- Hunyuan 3D 3.0, 3.1 and Express native generation and query routes, credit facts, model file and preview artifacts.
-- Documented token and credit billing expressions, bilingual setup guides, offline unit tests and a real-host golden fixture.
+- The gateway's install page now reads the plugin's details from the code, so it lists the addresses the plugin contacts instead of saying they could not be read. Requests, models and billing are unchanged.

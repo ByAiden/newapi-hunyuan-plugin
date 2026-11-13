@@ -7,7 +7,7 @@ export const meta = {
     "en": "Tencent Hunyuan video generation (HY-Video 1.5, text and image to video) and Hunyuan 3D generation (HY-3D 3.0, 3.1 and Express, text, image and multi-view to 3D) through Tencent Cloud TokenHub",
     "zh": "腾讯混元生视频（HY-Video 1.5，文生视频、图生视频）与混元生3D（HY-3D 3.0、3.1、极速版，文生、图生、多视图生3D），通过腾讯云 TokenHub 调用"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": { "name": "ByAiden", "url": "https://github.com/ByAiden" },
   "website": "https://cloud.tencent.com/document/product/1823/137202",
   "baseUrl": "https://tokenhub.tencentmaas.com",
@@ -76,6 +76,9 @@ export const meta = {
   ],
   "protocols": [{ "name": "openai_video", "models": ["hy-video-v1.5"] }]
 };
+
+// The gateway reads the manifest statically, so the code below uses these copies of its values.
+const MODEL_IDS = ["hy-video-v1.5","hy-3d-3.0","hy-3d-3.1","hy-3d-express"];
 
 // TokenHub (Tencent Cloud's model gateway) serves Hunyuan with a Bearer API key:
 // video https://cloud.tencent.com/document/product/1823/137202
@@ -451,7 +454,7 @@ function checkedRequest(ctx) {
   const body = plainObject(ctx.requestBody) || {};
   if (isVideoModel(model)) return { kind: "video", model: model, body: videoRequest(body, model) };
   if (is3DModel(model)) return { kind: "3d", model: model, body: threeDRequest(body, model) };
-  throw new Error("unsupported model " + model + "; use " + meta.models.join(", "));
+  throw new Error("unsupported model " + model + "; use " + MODEL_IDS.join(", "));
 }
 
 export function buildSubmitRequest(ctx) {
