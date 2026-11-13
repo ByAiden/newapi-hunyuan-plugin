@@ -1,6 +1,5 @@
 ---
-translations:
-  en: README.md
+locale: zh-CN
 ---
 # 腾讯混元生视频与生3D
 

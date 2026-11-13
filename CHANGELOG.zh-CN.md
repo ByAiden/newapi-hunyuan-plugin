@@ -3,8 +3,6 @@ changelogVersion: 1
 plugin: "byaiden_hunyuan"
 version: "1.0.0"
 locale: "zh-CN"
-translations:
-  en: CHANGELOG.md
 ---
 # Changelog
 
