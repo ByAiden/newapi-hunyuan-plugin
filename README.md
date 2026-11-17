@@ -70,18 +70,18 @@ Pro options: `generate_type` (Normal default; LowPoly/Geometry/Sketch), `enable_
 
 Usage fields contain facts, never money. Video reserves `video_tokens=150000` (5 seconds × 30,000 tokens/second); completion settles from `tokenhub_usage.total_tokens`, capped at 150000. Missing/zero usage keeps the reservation. `billing_ratios` returns null. 3D reserves `credits` from the official option table and keeps that reservation because the documented 3D query response has no usage field.
 
-Official prices checked on 2026-11-12 are **CNY**, not USD: video CNY 10 per million tokens; 3D CNY 0.12 per credit. For an explicit example conversion of **7 CNY = 1 USD**, use the following USD-returning expressions. Replace `7` with your chosen CNY-per-USD conversion rate; these are converted list prices, not an official Tencent USD price or a live exchange quote. new-api quota = returned USD × 500000.
+Official prices checked on 2026-11-12 are **CNY**, not USD: video CNY 10 per million tokens; 3D CNY 0.12 per credit. The expressions below use these CNY prices as plain numbers, for sites that sell 1 USD of quota for 1 CNY. If your site bills in real USD, divide each expression by your rate (for example `/ 7`). new-api quota = expression result × 500000.
 
-| Model | Recommended `tiered_expr` expression at the example exchange rate |
+| Model | Recommended `tiered_expr` expression (CNY list price numbers) |
 | --- | --- |
-| `hy-video-v1.5` | `tier("base", u("video_tokens") * 10 / 1000000 / 7)` |
-| `hy-3d-3.0` | `tier("base", u("credits") * 0.12 / 7)` |
-| `hy-3d-3.1` | `tier("base", u("credits") * 0.12 / 7)` |
-| `hy-3d-express` | `tier("base", u("credits") * 0.12 / 7)` |
+| `hy-video-v1.5` | `tier("base", u("video_tokens") * 10 / 1000000)` |
+| `hy-3d-3.0` | `tier("base", u("credits") * 0.12)` |
+| `hy-3d-3.1` | `tier("base", u("credits") * 0.12)` |
+| `hy-3d-express` | `tier("base", u("credits") * 0.12)` |
 
 3D base credits: Normal 20, LowPoly 25, Geometry 15, Sketch 25; add 10 for multi-view, 10 for PBR, 10 when a custom `face_count` is supplied, and 5 for an explicit Pro `result_format`. Express is 15 plus 10 for PBR. Omit `face_count` to use the vendor's 500000 default without requesting the custom-face option. Invalid or ignored option combinations are rejected before submitting. Failed tasks are refunded by the host. Resource pack discounts, free allowances and account-specific prices are not reflected.
 
-At this example rate, one video reserves USD 0.2142857 (about 107143 quota), Normal 3D USD 0.3428571 (about 171429 quota), Express USD 0.2571429 (about 128571 quota). Configure expressions under the selected plugin/model pair; async settlement may appear as a separate delta log.
+With these expressions one video reserves 1.5 (750000 quota), Normal 3D 2.4 (1200000 quota), Express 1.8 (900000 quota). Configure expressions under the selected plugin/model pair; async settlement may appear as a separate delta log.
 
 ## Through another New API gateway
 

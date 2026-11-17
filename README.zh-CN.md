@@ -69,18 +69,18 @@ curl https://NEW_API_HOST/byaiden_hunyuan/v1/api/3d/submit \
 
 用量只报告事实，不包含金额。视频预扣 `video_tokens=150000`（5 秒 × 30000 tokens/秒）；完成后使用 `tokenhub_usage.total_tokens` 结算，上限 150000，缺失或为零则保留预扣。`billing_ratios` 返回 null。3D 按官方选项表预扣 `credits`；当前查询文档没有用量字段，完成后保留预扣。
 
-2026-11-12 核验的官方定价是**人民币**：视频 10 元/百万 tokens，3D 0.12 元/积分。以下明确以 **7 元人民币 = 1 美元** 为示例汇率，表达式返回美元。请将 `7` 替换为自己的人民币兑美元换算率；这不是腾讯官方美元报价，也不是实时汇率。new-api quota = 美元 × 500000。
+2026-11-12 核验的官方定价是**人民币**：视频 10 元/百万 tokens，3D 0.12 元/积分。以下表达式直接使用人民币标价数字，适用于「1 元 = 1 美元额度」的站点；站点按美元结算时，在表达式末尾再除以你的汇率（例如 `/ 7`）。new-api quota = 表达式结果 × 500000。
 
-| 模型 | 示例汇率下的推荐 `tiered_expr` |
+| 模型 | 推荐 `tiered_expr`（人民币标价数字） |
 | --- | --- |
-| `hy-video-v1.5` | `tier("base", u("video_tokens") * 10 / 1000000 / 7)` |
-| `hy-3d-3.0` | `tier("base", u("credits") * 0.12 / 7)` |
-| `hy-3d-3.1` | `tier("base", u("credits") * 0.12 / 7)` |
-| `hy-3d-express` | `tier("base", u("credits") * 0.12 / 7)` |
+| `hy-video-v1.5` | `tier("base", u("video_tokens") * 10 / 1000000)` |
+| `hy-3d-3.0` | `tier("base", u("credits") * 0.12)` |
+| `hy-3d-3.1` | `tier("base", u("credits") * 0.12)` |
+| `hy-3d-express` | `tier("base", u("credits") * 0.12)` |
 
 专业版基础积分：Normal 20、LowPoly 25、Geometry 15、Sketch 25；多视图 +10、PBR +10、显式传自定义 `face_count` +10、额外 `result_format` +5。极速版基础 15，PBR +10。若使用默认 500000 面且不想选择自定义面数选项，请省略 `face_count`。不适用的选项组合在提交前拒绝。失败任务由宿主退款。不计算免费额度、资源包折扣或账户优惠。
 
-上述示例汇率下，单个视频预扣约 0.2142857 美元（107143 quota）；普通专业版约 0.3428571 美元（171429 quota）；极速版约 0.2571429 美元（128571 quota）。表达式配置在对应插件／模型组合下；异步结算可能产生单独的差额日志。
+按上述表达式，单个视频预扣 1.5（750000 quota）；普通专业版 2.4（1200000 quota）；极速版 1.8（900000 quota）。表达式配置在对应插件／模型组合下；异步结算可能产生单独的差额日志。
 
 ## 经由另一个 New API 网关
 

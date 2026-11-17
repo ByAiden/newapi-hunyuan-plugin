@@ -7,7 +7,7 @@ export const meta = {
     "en": "Tencent Hunyuan video generation (HY-Video 1.5, text and image to video) and Hunyuan 3D generation (HY-3D 3.0, 3.1 and Express, text, image and multi-view to 3D) through Tencent Cloud TokenHub",
     "zh": "腾讯混元生视频（HY-Video 1.5，文生视频、图生视频）与混元生3D（HY-3D 3.0、3.1、极速版，文生、图生、多视图生3D），通过腾讯云 TokenHub 调用"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": { "name": "ByAiden", "url": "https://github.com/ByAiden" },
   "website": "https://cloud.tencent.com/document/product/1823/137202",
   "baseUrl": "https://tokenhub.tencentmaas.com",
