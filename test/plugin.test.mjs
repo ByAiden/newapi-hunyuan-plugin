@@ -23,7 +23,7 @@ test('manifest is a plain JSON literal and community release',()=>{
   const src=readFileSync(new URL('../plugin.js',import.meta.url),'utf8');
   const match=src.match(/export const meta = (\{[\s\S]*?\n\});/);
   assert.deepEqual(JSON.parse(match[1]),p.meta);
-  assert.equal(p.meta.version,'1.0.1');
+  assert.match(p.meta.version,/^\d+\.\d+\.\d+$/);
   assert.match(p.meta.key,/^[a-z0-9_]{1,30}$/);
   assert.ok(p.meta.key.endsWith('_hunyuan'));
   assert.equal(p.meta.channelTypes,undefined);
@@ -118,7 +118,7 @@ test('artifact downloads refresh video URL and strip credentials',()=>{
 test('native presenters return gateway ids and artifact URLs only',()=>{
   const task={task_id:'public-1',status:'SUCCESS',created_at:123,updated_at:124,data:doneVideo};
   const rendered=p.native.videoTask({artifacts:{video:{url:'https://gateway.example/video'}}},task);
-  assert.equal(rendered.task_id,'public-1');assert.equal(rendered.videos[0].url,'https://gateway.example/video');assert.equal(rendered.tokenhub_usage,undefined);
+  assert.equal(rendered.task_id,'public-1');assert.equal(rendered.videos[0].url,'https://gateway.example/video');assert.deepEqual(rendered.tokenhub_usage,{total_tokens:150000});
   const j=p.native.jobStatus({artifacts:{glb:{url:'https://gateway.example/glb'},preview_glb:{url:'https://gateway.example/preview'}}},{...task,data:done3D});
   assert.equal(j.id,'public-1');assert.equal(j.data[0].url,'https://gateway.example/glb');
   assert.deepEqual(p.native.query3D(json({id:'public-1',model:G})),{kind:'query',taskIds:['public-1']});
@@ -134,4 +134,87 @@ test("code never references meta, so the gateway can read it statically", async 
   const rest = src.slice(src.indexOf("\n};\n", src.indexOf("export const meta = {")));
   assert.doesNotMatch(rest, /(^|[^A-Za-z0-9_$.])meta([^A-Za-z0-9_$]|$)/m);
   assert.ok(rest.includes(JSON.stringify(p.meta.models)));
+});
+
+test('PLUGIN_KEY matches meta.key and new_api is declared',()=>{
+  const src=readFileSync(new URL('../plugin.js',import.meta.url),'utf8');
+  assert.equal(src.match(/const PLUGIN_KEY = "([^"]+)";/)[1],p.meta.key);
+  assert.deepEqual(p.meta.upstreams,['vendor','new_api']);
+});
+
+// The middle gateway runs this plugin too: the driver addresses its native
+// routes under /{key} with the gateway token and reads what the middle's own
+// presenters render.
+const M = 'https://middle.example';
+const gw = {baseUrl:M,apiKey:'sk-middle',authHeader:'Bearer sk-middle',upstream:{kind:'new_api'}};
+const root = M+'/'+p.meta.key;
+
+test('new_api: video submit, query, settlement and content through the middle gateway',()=>{
+  const c=ctx(V,{prompt:'A boat',model:V},gw);
+  const request=p.buildSubmitRequest(c);
+  assert.equal(request.url,root+'/v1/wand/hunyuan-video/generation');
+  assert.equal(request.headers.Authorization,'Bearer sk-middle');
+  // The middle plugin decodes the body the outer layer sends and reserves the same facts.
+  const middle=p.native.createVideo(json(request.body));
+  assert.equal(middle.model,V);
+  assert.deepEqual(p.extractUsage(ctx(V,middle.requestBody)),p.extractUsage(c));
+  const created=p.native.videoCreated({},{task_id:'task_mid',created_at:100,data:{task_id:'vendor-1',created:100,request_id:'r'}});
+  assert.equal(p.parseSubmitResponse(c,{status:200,body:created}).taskId,'task_mid');
+  const q={...ctx(V,undefined,gw),taskId:'task_mid',data:created};
+  const qr=p.buildQueryRequest(q);
+  assert.equal(qr.url,root+'/v1/wand/hunyuan-video/tasks/task_mid');
+  assert.equal(qr.method,'GET');assert.equal(qr.headers.Authorization,'Bearer sk-middle');
+  const running=p.native.videoTask({},{task_id:'task_mid',status:'IN_PROGRESS',data:{task_id:'vendor-1',status:'running'}});
+  assert.equal(p.parseTaskResult(q,running).status,'IN_PROGRESS');
+  const rendered=p.native.videoTask({artifacts:{video:{url:'https://middle.example/signed/video'}}},{task_id:'task_mid',status:'SUCCESS',data:{...doneVideo,tokenhub_usage:{total_tokens:120000,prompt_tokens:1}}});
+  assert.deepEqual(rendered.tokenhub_usage,{total_tokens:120000});
+  const result=p.parseTaskResult(q,rendered);
+  assert.equal(result.status,'SUCCESS');
+  // Outer settles on the same facts as the middle layer.
+  assert.deepEqual(p.extractUsageOnComplete(q,result,rendered),{video_tokens:120000});
+  assert.deepEqual(p.extractUsageOnComplete(ctx(V),{status:'SUCCESS'},{...doneVideo,tokenhub_usage:{total_tokens:120000}}),{video_tokens:120000});
+  assert.deepEqual(p.listArtifacts({status:'SUCCESS',model:V,data:rendered}),[{key:'video',type:'video',mimeType:'video/mp4'}]);
+  const seen=[];
+  globalThis.utils.fetch=req=>{seen.push(req);return {status:200,body:rendered};};
+  const content=p.buildContentRequest({...q,upstreamTaskId:'task_mid',artifactKey:'video',clientRequest:{method:'GET'},data:rendered});
+  assert.deepEqual(content,{url:'https://middle.example/signed/video',method:'GET',credentialless:true});
+  assert.equal(seen[0].url,root+'/v1/wand/hunyuan-video/tasks/task_mid');assert.equal(seen[0].headers.Authorization,'Bearer sk-middle');
+  globalThis.utils.fetch=()=>{throw new Error('offline');};
+  const failed=p.native.videoTask({},{task_id:'task_mid',status:'FAILURE',fail_reason:'boom',data:{task_id:'vendor-1',status:'running'}});
+  assert.equal(p.parseTaskResult(q,failed).status,'FAILURE');
+});
+
+test('new_api: 3D submit and the dynamic query route on the middle gateway',()=>{
+  const c=ctx(G,{prompt:'cat',enable_pbr:true,model:G},{...gw,action:'text_to_3d'});
+  const request=p.buildSubmitRequest(c);
+  assert.equal(request.url,root+'/v1/api/3d/submit');
+  assert.equal(p.native.create3D(json(request.body)).model,G);
+  const created=p.native.jobCreated({},{task_id:'task_3d',created_at:5,status:'SUBMITTED',data:{id:'job-1',status:'queued'}});
+  assert.equal(p.parseSubmitResponse(c,{status:200,body:created}).taskId,'task_3d');
+  const q={...ctx(G,undefined,gw),taskId:'task_3d',data:created};
+  const qr=p.buildQueryRequest(q);
+  assert.equal(qr.url,root+'/v1/api/3d/query?id=task_3d');assert.equal(qr.method,'GET');assert.equal(qr.body,undefined);
+  assert.ok(p.meta.routes.some(r=>r.method==='GET'&&r.path==='/v1/api/3d/query'&&r.type==='query'&&r.taskIdParam==='id'&&r.render==='jobStatus'));
+  const rendered=p.native.jobStatus({artifacts:{glb:{url:'https://middle.example/s/glb'},preview_glb:{url:'https://middle.example/s/png'}}},{task_id:'task_3d',status:'SUCCESS',data:done3D});
+  assert.equal(p.parseTaskResult(q,rendered).status,'SUCCESS');
+  assert.deepEqual(p.listArtifacts({status:'SUCCESS',model:G,data:rendered}).map(a=>a.key),['glb','preview_glb']);
+  assert.equal(p.buildContentRequest({...q,artifactKey:'glb',clientRequest:{method:'GET'},data:rendered}).url,'https://middle.example/s/glb');
+  assert.equal(p.extractUsageOnComplete(q,{status:'SUCCESS'},rendered),null);
+  assert.deepEqual(p.extractUsage(c),{credits:30});
+});
+
+test('a missing ctx.upstream means the vendor',()=>{
+  assert.equal(p.buildSubmitRequest(ctx(V)).url,B+'/v1/wand/hunyuan-video/generation');
+});
+
+test('the dynamic 3D query presenter reads the first task of the list it is given',()=>{
+  const rendered=p.native.jobStatus({artifacts:{}},[{task_id:'public-9',status:'SUCCESS',created_at:5,updated_at:6,data:done3D}]);
+  assert.equal(rendered.id,'public-9');assert.equal(rendered.status,'completed');
+  assert.throws(()=>p.native.jobStatus({},[]),/artifact_not_found/);
+});
+
+test('TokenHub gets a Bearer key even though the host passes the bare key as authHeader',()=>{
+  const request=p.buildSubmitRequest(ctx(V,{prompt:'A boat'},{apiKey:'tk-1',authHeader:'tk-1',upstream:{kind:'vendor'}}));
+  assert.equal(request.headers.Authorization,'Bearer tk-1');
+  assert.equal(p.buildQueryRequest({...ctx(G,undefined,{apiKey:'tk-1',authHeader:'tk-1'}),taskId:'j'}).headers.Authorization,'Bearer tk-1');
 });

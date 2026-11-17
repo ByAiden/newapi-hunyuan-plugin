@@ -6,11 +6,11 @@ translations:
 
 **English** | [简体中文](README.zh-CN.md)
 
-A new-api Task Plugin API v1 plugin for Tencent Cloud TokenHub: Hunyuan text/image to video and text/image/multi-view to 3D. Version 1.0.0.
+A new-api Task Plugin API v1 plugin for Tencent Cloud TokenHub: Hunyuan text/image to video and text/image/multi-view to 3D.
 
 ## Channel setup
 
-1. Upload `plugin.js`, enable the plugin and activate version 1.0.0.
+1. Upload `plugin.js`, enable the plugin and activate the uploaded version.
 2. Create a **Task Plugin** channel (type 61), and bind `byaiden_hunyuan`.
 3. Paste an API key created in [TokenHub API Key management](https://console.cloud.tencent.com/tokenhub/apikey) into the channel key field. Enable the required models and postpaid access in TokenHub.
 4. Leave the base URL empty to use `https://tokenhub.tencentmaas.com`, or enter that address without `/v1`. Add the model IDs below to the channel.
@@ -35,7 +35,8 @@ Clients authenticate to new-api using `Authorization: Bearer NEW_API_TOKEN`. Ups
 | `POST /v1/wand/hunyuan-video/generation` | TokenHub native video submit |
 | `GET /v1/wand/hunyuan-video/tasks/{task_id}` | Native video status |
 | `POST /v1/api/3d/submit` | Native 3D submit |
-| `POST /v1/api/3d/query` | Native 3D query, body `{"id":"GATEWAY_TASK_ID","model":"hy-3d-3.1"}` |
+| `POST /v1/api/3d/query` | Native 3D query, body `{"id":"GATEWAY_TASK_ID","model":"hy-3d-3.1"}`. Reports the status; file URLs are empty |
+| `GET /v1/api/3d/query?id=GATEWAY_TASK_ID` | 3D query with the gateway download addresses of the files and previews |
 
 Native routes also work under `/byaiden_hunyuan`, for example `/byaiden_hunyuan/v1/api/3d/submit`. Native replies replace vendor IDs with gateway task IDs, and output URLs with gateway artifact URLs. 3D files and preview images are listed as host task artifacts. Use the IDs returned by new-api when querying. The 3D query model is taken from the saved task, not trusted from the client.
 
@@ -82,6 +83,18 @@ Official prices checked on 2026-11-12 are **CNY**, not USD: video CNY 10 per mil
 
 At this example rate, one video reserves USD 0.2142857 (about 107143 quota), Normal 3D USD 0.3428571 (about 171429 quota), Express USD 0.2571429 (about 128571 quota). Configure expressions under the selected plugin/model pair; async settlement may appear as a separate delta log.
 
+## Through another New API gateway
+
+A second gateway can sell Hunyuan through yours. Install this plugin, at the same version, on both gateways:
+
+- On the gateway that calls TokenHub, set up the Task Plugin channel above.
+- On the other gateway, create a **New API** channel (type 60). Its base URL is the first gateway's address and its key is a token from the first gateway. Pick `byaiden_hunyuan` under Upstream task plugins and add the models.
+
+The outer gateway sends TokenHub's own requests to the first gateway's `/byaiden_hunyuan/...` paths with the token as a Bearer key and polls them there: videos at `GET /byaiden_hunyuan/v1/wand/hunyuan-video/tasks/{task_id}`, 3D jobs at `GET /byaiden_hunyuan/v1/api/3d/query?id=`. Outputs download through the first gateway's download addresses, so set its server address (`ServerAddress`) to an address the outer gateway can reach. Each gateway bills its own users with its own task expressions; the expressions above work on both.
+
+- Video settles on the tokens TokenHub reports, on both gateways: the first gateway's video query now passes on `tokenhub_usage.total_tokens`.
+- 3D jobs keep the reserved credits on both gateways, as before.
+
 ## Limits and verification
 
 - Requires new-api v1.0.0-rc.50 or newer. `npm test` exercises offline hooks; `test/golden.json` replays exported hooks in the real host.
@@ -90,7 +103,7 @@ At this example rate, one video reserves USD 0.2142857 (about 107143 quota), Nor
 - 3D job IDs are valid for 24 hours. Video downloads refresh signed URLs with a GET and fall back to the last poll; 3D query uses POST, unavailable to `utils.fetch` in content hooks, so 3D downloads use the last poll's URL. Download promptly and retain permanent copies separately.
 - Pro defaults, additional-view compatibility on 3.0, and explicit default face-count credit behavior should be confirmed against an actual account before commercial use. This plugin conservatively excludes Sketch on 3.1 because its current model capability list does not include it.
 - Image size/dimension rules remain the caller's responsibility for remote URLs; vendor validation remains authoritative. See the linked API guides for exact limits. Unknown upstream states become UNKNOWN, and successful envelopes without usable output fail.
-- Cancellation, audio artifacts, image generation, 3D postprocessing and gateway-to-gateway chaining are outside this release. Retries can create duplicate billable tasks.
+- Cancellation, audio artifacts, image generation, and 3D postprocessing are outside this release. Retries can create duplicate billable tasks.
 
 ## Official references
 

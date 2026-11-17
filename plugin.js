@@ -7,12 +7,13 @@ export const meta = {
     "en": "Tencent Hunyuan video generation (HY-Video 1.5, text and image to video) and Hunyuan 3D generation (HY-3D 3.0, 3.1 and Express, text, image and multi-view to 3D) through Tencent Cloud TokenHub",
     "zh": "腾讯混元生视频（HY-Video 1.5，文生视频、图生视频）与混元生3D（HY-3D 3.0、3.1、极速版，文生、图生、多视图生3D），通过腾讯云 TokenHub 调用"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": { "name": "ByAiden", "url": "https://github.com/ByAiden" },
   "website": "https://cloud.tencent.com/document/product/1823/137202",
   "baseUrl": "https://tokenhub.tencentmaas.com",
   "models": ["hy-video-v1.5", "hy-3d-3.0", "hy-3d-3.1", "hy-3d-express"],
   "fetchMode": "per_task",
+  "upstreams": ["vendor", "new_api"],
   "keyHint": { "en": "TokenHub API key", "zh": "TokenHub API Key" },
   "usageSchema": {
     "video_tokens": {
@@ -72,6 +73,13 @@ export const meta = {
       "type": "dynamic",
       "decode": "query3D",
       "render": "jobStatus"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/3d/query",
+      "type": "query",
+      "taskIdParam": "id",
+      "render": "jobStatus"
     }
   ],
   "protocols": [{ "name": "openai_video", "models": ["hy-video-v1.5"] }]
@@ -79,6 +87,7 @@ export const meta = {
 
 // The gateway reads the manifest statically, so the code below uses these copies of its values.
 const MODEL_IDS = ["hy-video-v1.5","hy-3d-3.0","hy-3d-3.1","hy-3d-express"];
+const PLUGIN_KEY = "byaiden_hunyuan";
 
 // TokenHub (Tencent Cloud's model gateway) serves Hunyuan with a Bearer API key:
 // video https://cloud.tencent.com/document/product/1823/137202
@@ -168,12 +177,19 @@ function isVideoTask(ctx, data) {
   return present(body.task_id) || Array.isArray(body.videos);
 }
 
+// On a New API channel the same plugin answers on another gateway, which
+// serves TokenHub's paths under the plugin's key and takes the gateway token
+// as the Bearer token.
+function viaGateway(ctx) {
+  return Boolean(ctx.upstream && ctx.upstream.kind === "new_api");
+}
+
 function baseUrl(ctx) {
-  return trimmed(ctx.baseUrl).replace(/\/+$/, "") || DEFAULT_BASE;
+  return (trimmed(ctx.baseUrl).replace(/\/+$/, "") || DEFAULT_BASE) + (viaGateway(ctx) ? "/" + PLUGIN_KEY : "");
 }
 
 function requestHeaders(ctx) {
-  return { "Content-Type": "application/json", Accept: "application/json", Authorization: ctx.authHeader || "Bearer " + trimmed(ctx.apiKey) };
+  return { "Content-Type": "application/json", Accept: "application/json", Authorization: viaGateway(ctx) && ctx.authHeader ? ctx.authHeader : "Bearer " + trimmed(ctx.apiKey) };
 }
 
 function httpURL(value) {
@@ -417,7 +433,10 @@ function threeDAction(req) {
   return present(req.image_url) || present(req.image_base64) ? "image_to_3d" : "text_to_3d";
 }
 
+// TokenHub reads a 3D job with POST; an upstream gateway also serves it as
+// GET /v1/api/3d/query?id=, a query route that answers with download addresses.
 function threeDQuery(ctx, id) {
+  if (viaGateway(ctx)) return { url: baseUrl(ctx) + "/v1/api/3d/query?id=" + encodeURIComponent(id), method: "GET", headers: requestHeaders(ctx) };
   return { url: baseUrl(ctx) + "/v1/api/3d/query", method: "POST", headers: requestHeaders(ctx), body: { model: modelOf(ctx), id: id } };
 }
 
@@ -565,8 +584,8 @@ export const native = {
     const data = plainObject(task.data) || {};
     return { task_id: task.task_id, created: unixTime(data.created) || unixTime(task.created_at), request_id: trimmed(data.request_id) };
   },
-  // Hunyuan's task shape with the gateway's id and download address; account
-  // usage stays out.
+  // Hunyuan's task shape with the gateway's id and download address. Of the
+  // usage only the token count stays, which a gateway in front settles on.
   videoTask: function (ctx, task) {
     const data = plainObject(task.data) || {};
     const out = { task_id: task.task_id, status: VENDOR_VIDEO_STATUS[task.status] || "queued", created: unixTime(data.created) || unixTime(task.created_at), error: null };
@@ -574,6 +593,9 @@ export const native = {
       const artifact = ctx.artifacts && ctx.artifacts.video;
       const first = (Array.isArray(data.videos) ? data.videos : [])[0] || {};
       out.videos = [{ url: artifact ? artifact.url : "", audio_url: "", generate_info: trimmed(first.generate_info) }];
+      const usage = plainObject(data.tokenhub_usage);
+      const tokens = usage ? Number(usage.total_tokens) : 0;
+      if (Number.isFinite(tokens) && tokens > 0) out.tokenhub_usage = { total_tokens: tokens };
     }
     if (task.status === "FAILURE") {
       const error = plainObject(data.error);
@@ -598,7 +620,10 @@ export const native = {
     const data = plainObject(task.data) || {};
     return { id: task.task_id, object: "3d_job", created_at: unixTime(data.created_at) || unixTime(task.created_at), status: VENDOR_3D_STATUS[task.status] || "queued" };
   },
-  jobStatus: function (ctx, task) {
+  // The POST route is dynamic, so its query hands over a list of tasks.
+  jobStatus: function (ctx, view) {
+    const task = Array.isArray(view) ? view[0] : view;
+    if (!task) throw new Error("artifact_not_found");
     const data = plainObject(task.data) || {};
     const out = {
       id: task.task_id,

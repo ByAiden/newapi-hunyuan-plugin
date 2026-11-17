@@ -5,11 +5,11 @@ locale: zh-CN
 
 [English](README.md) | **简体中文**
 
-适用于 new-api Task Plugin API v1 的腾讯云 TokenHub 插件，支持混元文生视频、图生视频，以及文生3D、图生3D和多视图生3D。版本 1.0.0。
+适用于 new-api Task Plugin API v1 的腾讯云 TokenHub 插件，支持混元文生视频、图生视频，以及文生3D、图生3D和多视图生3D。
 
 ## 渠道配置
 
-1. 上传 `plugin.js`，启用插件并激活 1.0.0。
+1. 上传 `plugin.js`，启用插件并激活上传的版本。
 2. 新建 **Task Plugin／任务插件** 渠道（类型 61），绑定 `byaiden_hunyuan`。
 3. 在渠道密钥栏粘贴 [TokenHub API Key 管理](https://console.cloud.tencent.com/tokenhub/apikey) 创建的 API Key，并在 TokenHub 开通对应模型及后付费服务。
 4. API 地址留空使用 `https://tokenhub.tencentmaas.com`，或填写该地址，不要加 `/v1`。添加下表所需模型。
@@ -34,7 +34,8 @@ locale: zh-CN
 | `POST /v1/wand/hunyuan-video/generation` | 原生视频提交 |
 | `GET /v1/wand/hunyuan-video/tasks/{task_id}` | 原生视频查询 |
 | `POST /v1/api/3d/submit` | 原生3D提交 |
-| `POST /v1/api/3d/query` | 原生3D查询，请求体 `{"id":"网关任务ID","model":"hy-3d-3.1"}` |
+| `POST /v1/api/3d/query` | 原生3D查询，请求体 `{"id":"网关任务ID","model":"hy-3d-3.1"}`；返回状态，文件 URL 为空 |
+| `GET /v1/api/3d/query?id=网关任务ID` | 3D查询，返回文件和预览图的网关下载地址 |
 
 原生路径也可加 `/byaiden_hunyuan` 前缀，例如 `/byaiden_hunyuan/v1/api/3d/submit`。原生响应中的任务 ID 均替换为网关 ID，结果 URL 替换为网关产物地址。3D文件与预览图通过宿主任务产物接口获取。查询必须使用 new-api 返回的 ID；3D查询所用模型以保存的任务为准。
 
@@ -81,6 +82,18 @@ curl https://NEW_API_HOST/byaiden_hunyuan/v1/api/3d/submit \
 
 上述示例汇率下，单个视频预扣约 0.2142857 美元（107143 quota）；普通专业版约 0.3428571 美元（171429 quota）；极速版约 0.2571429 美元（128571 quota）。表达式配置在对应插件／模型组合下；异步结算可能产生单独的差额日志。
 
+## 经由另一个 New API 网关
+
+另一个网关可以通过你的网关转售混元。两个网关都要安装本插件的同一版本：
+
+- 直接调用 TokenHub 的网关按上文创建任务插件渠道。
+- 另一个网关创建 **New API** 渠道（类型 60）：Base URL 填第一个网关的地址，密钥填第一个网关的令牌，在「上游任务插件」中选择 `byaiden_hunyuan`，并添加模型。
+
+外层网关把 TokenHub 原生请求发到第一个网关的 `/byaiden_hunyuan/...` 路径，用令牌作为 Bearer 密钥，并在那里轮询：视频用 `GET /byaiden_hunyuan/v1/wand/hunyuan-video/tasks/{task_id}`，3D 用 `GET /byaiden_hunyuan/v1/api/3d/query?id=`。结果通过第一个网关的下载地址取回，请把它的服务器地址（`ServerAddress`）设成外层网关能访问的地址。每个网关用自己的任务表达式向自己的用户计费，上面的表达式在两个网关上都适用。
+
+- 视频在两个网关上都按 TokenHub 报告的 token 数结算：第一个网关的视频查询现在会带上 `tokenhub_usage.total_tokens`。
+- 3D 任务在两个网关上都保持预扣积分，与以前相同。
+
 ## 限制与验证范围
 
 - 需要 new-api v1.0.0-rc.50 或更新版本。`npm test` 运行离线测试；`test/golden.json` 在真实宿主重放顶层 hooks。
@@ -89,7 +102,7 @@ curl https://NEW_API_HOST/byaiden_hunyuan/v1/api/3d/submit \
 - 3D任务 ID 有效期 24 小时。视频下载通过 GET 刷新临时 URL，失败时回退到最近轮询结果。3D查询是 POST，内容 hooks 的 `utils.fetch` 不允许 POST，因此3D下载使用最后一次轮询的 URL；请及时下载并自行持久化。
 - 商用前应通过实际账户确认专业版默认行为、3.0 附加视角兼容性、显式传默认面数的积分行为。3.1 当前能力列表未列 Sketch，本插件保守禁用。
 - 远程图片的大小、分辨率由调用方确保符合官方文档，最终由厂商校验。未知状态返回 UNKNOWN，成功但没有可用产物时判定失败。
-- 本版不含取消任务、音频产物、生图、3D后处理或网关级联。重复提交可能产生重复计费。
+- 本版不含取消任务、音频产物、生图或3D后处理。重复提交可能产生重复计费。
 
 ## 官方资料
 

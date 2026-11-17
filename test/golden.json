@@ -1248,6 +1248,165 @@
         "method": "GET",
         "credentialless": true
       }
+    },
+    {
+      "name": "new_api: video goes to the middle gateway",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "prompt": "A puppy runs on grass",
+            "seed": 7,
+            "duration": 5,
+            "aspect_ratio": "9:16",
+            "model": "hy-video-v1.5"
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "text_to_video",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://middle.example",
+          "apiKey": "sk-middle",
+          "authHeader": "Bearer sk-middle",
+          "upstream": {
+            "kind": "new_api"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "url": "https://middle.example/byaiden_hunyuan/v1/wand/hunyuan-video/generation",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer sk-middle"
+        },
+        "body": {
+          "model": "hy-video-v1.5",
+          "prompt": "A puppy runs on grass",
+          "aspect_ratio": "9:16",
+          "seed": 7,
+          "duration": 5,
+          "resolution": "720p"
+        },
+        "action": "text_to_video"
+      }
+    },
+    {
+      "name": "new_api: video query on the middle gateway",
+      "hook": "buildQueryRequest",
+      "args": [
+        {
+          "taskId": "251435731-WandVideo-05c42d57",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-video-v1.5",
+          "upstreamModel": "hy-video-v1.5",
+          "baseUrl": "https://middle.example",
+          "apiKey": "sk-middle",
+          "authHeader": "Bearer sk-middle",
+          "upstream": {
+            "kind": "new_api"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        }
+      ],
+      "expected": {
+        "url": "https://middle.example/byaiden_hunyuan/v1/wand/hunyuan-video/tasks/251435731-WandVideo-05c42d57",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer sk-middle"
+        }
+      }
+    },
+    {
+      "name": "new_api: 3D goes to the middle gateway",
+      "hook": "buildSubmitRequest",
+      "args": [
+        {
+          "requestBody": {
+            "model": "hy-3d-3.0",
+            "image_url": "https://example.com/cat.png",
+            "generate_type": "LowPoly",
+            "polygon_type": "quadrilateral",
+            "enable_pbr": true
+          },
+          "requestHeaders": {
+            "Content-Type": "application/json",
+            "Accept": ""
+          },
+          "action": "image_to_3d",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://middle.example",
+          "apiKey": "sk-middle",
+          "authHeader": "Bearer sk-middle",
+          "upstream": {
+            "kind": "new_api"
+          },
+          "config": {},
+          "files": [],
+          "publicTaskId": "task_public"
+        }
+      ],
+      "expected": {
+        "url": "https://middle.example/byaiden_hunyuan/v1/api/3d/submit",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer sk-middle"
+        },
+        "body": {
+          "model": "hy-3d-3.0",
+          "image_url": "https://example.com/cat.png",
+          "enable_pbr": true,
+          "generate_type": "LowPoly",
+          "polygon_type": "quadrilateral"
+        },
+        "action": "image_to_3d"
+      }
+    },
+    {
+      "name": "new_api: 3D query on the middle gateway",
+      "hook": "buildQueryRequest",
+      "args": [
+        {
+          "taskId": "1472100320",
+          "publicTaskId": "task_public",
+          "action": "",
+          "model": "hy-3d-3.0",
+          "upstreamModel": "hy-3d-3.0",
+          "baseUrl": "https://middle.example",
+          "apiKey": "sk-middle",
+          "authHeader": "Bearer sk-middle",
+          "upstream": {
+            "kind": "new_api"
+          },
+          "config": {},
+          "data": {},
+          "state": null
+        }
+      ],
+      "expected": {
+        "url": "https://middle.example/byaiden_hunyuan/v1/api/3d/query?id=1472100320",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer sk-middle"
+        }
+      }
     }
   ]
 }
